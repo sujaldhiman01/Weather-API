@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Indian Weather Board</title>
+
+<style>
+
+body{
+  margin:0;
+  height:100vh;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  color:white;
+}
+
+h1{
+  margin-bottom:30px;
+  letter-spacing:1px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit,200px);
+  gap:25px;
+}
+
+.card{
+  backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.1);
+  border-radius:16px;
+  padding:20px;
+  text-align:center;
+  transition: transform .3s, box-shadow .3s;
+}
+
+.card:hover{
+  transform: translateY(-6px) scale(1.04);
+  box-shadow:0 10px 25px rgba(0,0,0,.4);
+}
+
+.city{
+  font-size:20px;
+  font-weight:bold;
+}
+
+.temp{
+  font-size:38px;
+  margin:10px 0;
+}
+
+.emoji{
+  font-size:42px;
+}
+
+.wind{
+  opacity:.8;
+}
+
+.spinner{
+  width:50px;
+  height:50px;
+  border:6px solid rgba(255,255,255,0.2);
+  border-top:6px solid white;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+.error{
+  color:#ff9e9e;
+}
+
+.hidden{
+  display:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Indian Weather Board</h1>
+
+<div id="loader" class="spinner"></div>
+<div id="error" class="error hidden">⚠️ Unable to fetch weather</div>
+
+<div id="weatherGrid" class="grid"></div>
+
+<script>
+
+const cities = [
+ {name:"Delhi",lat:28.6139,lon:77.2090},
+ {name:"Mumbai",lat:19.0760,lon:72.8777},
+ {name:"Bengaluru",lat:12.9716,lon:77.5946}
+];
+
+function weatherEmoji(code){
+
+ if(code === 0) return "☀️";
+ if([1,2,3].includes(code)) return "🌤️";
+ if([45,48].includes(code)) return "🌫️";
+ if([51,53,55].includes(code)) return "🌦️";
+ if([61,63,65].includes(code)) return "🌧️";
+ if([71,73,75].includes(code)) return "❄️";
+ if([95,96,99].includes(code)) return "⛈️";
+
+ return "🌍";
+}
+
+async function loadWeather(){
+
+ const loader = document.getElementById("loader");
+ const grid = document.getElementById("weatherGrid");
+ const error = document.getElementById("error");
+
+ try{
+
+   const requests = cities.map(city =>
+     fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true`)
+     .then(res => res.json())
+   );
+
+   const weatherData = await Promise.all(requests);
+
+   loader.classList.add("hidden");
+
+   weatherData.forEach((data,i)=>{
+
+     const city = cities[i];
+     const temp = data.current_weather.temperature;
+     const wind = data.current_weather.windspeed;
+     const code = data.current_weather.weathercode;
+
+     const card = document.createElement("div");
+     card.className="card";
+
+     card.innerHTML = `
+       <div class="city">${city.name}</div>
+       <div class="emoji">${weatherEmoji(code)}</div>
+       <div class="temp">${temp}°C</div>
+       <div class="wind">💨 Wind: ${wind} km/h</div>
+     `;
+
+     grid.appendChild(card);
+
+   });
+
+ }catch(e){
+
+   loader.classList.add("hidden");
+   error.classList.remove("hidden");
+
+ }
+
+}
+
+loadWeather();
+
+</script>
+
+</body>
+</html>
